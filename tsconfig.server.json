@@ -1,0 +1,14 @@
+{
+  "extends": "@tsconfig/node18/tsconfig.json",
+  "include": ["server/*", "shared/*"],
+  "compilerOptions": {
+    "module": "commonjs",
+    "esModuleInterop": true,
+    "declaration": false,
+    "moduleResolution": "node",
+    "sourceMap": true,
+    "lib": ["es2015"],
+    "types": ["node", "express", "socket.io"],
+    "outDir": "dist-server"
+  }
+}
