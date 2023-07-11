@@ -5,6 +5,16 @@ export type PlayerData = {
   isAdmin: boolean,
 }[];
 
+export enum GameState {
+  IDLE = "IDLE",
+  WRITING = "WRITING",
+};
+
+export type GameData = {
+  round: number;
+  gameState: GameState;
+}
+
 export interface ServerToClientEvents {
   connect: (roomToJoin:string) => void;
   disconnect: () => void;
@@ -12,13 +22,13 @@ export interface ServerToClientEvents {
   playerAlreadyExists: () => void;
   joinGame: (roomName:string, playerData: PlayerData) => void;
   gameCreated: (roomName: string, playerData: PlayerData) => void;
-  newPlayerData: (playerData:PlayerData) => void;
-  newWord: (word:string) => void;
+  updateGameData: (playerData:PlayerData, gameData:GameData) => void;
+  newWord: (word:string, playerData:PlayerData, gameData:GameData) => void;
 }
 
 export interface ClientToServerEvents {
   createGame: (playerName: string) => void;
   tryJoinGame: (roomName: string, playerName:string) => void;
   toggleReady: (roomName: string, playerName:string) => void;
-  submitWord: (word:string, playerName:string) => void;
+  submitWord: (roomName: string, playerName:string, word:string) => void;
 }

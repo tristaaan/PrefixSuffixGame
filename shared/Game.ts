@@ -1,4 +1,6 @@
-const { randomString } = require('./util');
+import { randomString } from './util';
+import { GameState } from './types';
+import type { GameData, PlayerData } from './types';
 
 export class Player {
   name: string = "";
@@ -40,15 +42,40 @@ export class Player {
 export class Game {
   players: Player[] = [];
   roomName: string = ""
-  round:number = 0;
+  round:number = 1;
+  gameState:GameState = GameState.IDLE;
+
   constructor() {
     this.roomName = randomString(6);
+  }
+
+  getGameData() {
+    return { round: this.round, gameState: this.gameState}
+  }
+
+  startIdlePhase() {
+    this.unReadyPlayers();
+    this.gameState = GameState.IDLE;
+    this.newRound();
+  }
+
+  startWritingPhase() {
+    this.unReadyPlayers();
+    this.gameState = GameState.WRITING;
   }
 
   newGame() {
     this.round = 0;
     for (const p of this.players) {
       p.score = 0;
+    }
+  }
+
+  newRound() {
+    this.round += 1;
+    for (const p of this.players) {
+      p.clearSubmission();
+      p.ready = false;
     }
   }
 
@@ -69,6 +96,10 @@ export class Game {
     this.players.splice(index, 1);
   }
 
+  allWordsSubmitted():boolean {
+    return this.players.every((p) => p.submission.length > 0);
+  }
+
   readyPlayerToggle(playerName:string) {
     const player = this.getPlayer(playerName);
     if (player) {
@@ -82,12 +113,18 @@ export class Game {
     return this.players.every((p) => p.ready);
   }
 
+  unReadyPlayers() {
+    for (const p of this.players) {
+      p.ready = false;
+    }
+  }
+
   getPlayer(playerName:string): Player | undefined {
     return this.players.find((p) => p.name === playerName);
   }
 
   scoreRound() {
-    const wordCount: {[word: string]: number[]} = {};
+    const wordCount: Record<string, number[]> = {};
     // enumerate word counts
     for (const [i, p] of this.players.entries()) {
       const word = p.submission;

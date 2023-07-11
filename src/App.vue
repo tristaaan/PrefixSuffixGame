@@ -2,17 +2,18 @@
   import { ref, Ref } from 'vue'
   import { io, Socket } from 'socket.io-client';
 
-  import type { ServerToClientEvents, ClientToServerEvents, PlayerData } from '../shared/types';
+  import { GameState } from '../shared/types';
+  import type {
+    ServerToClientEvents,
+    ClientToServerEvents,
+    PlayerData,
+    GameData
+  } from '../shared/types';
 
   enum PageState {
     LOBBY = "lobby",
     GAME = "game"
   };
-
-  // enum GameState {
-  //   WRITING = "WRITING",
-  //   SCORING = "SCORING",
-  // };
 
   let pageState = ref(PageState.LOBBY);
   let joinPlayerName = ref("");
@@ -24,6 +25,8 @@
   let roomPlayers: Ref<PlayerData> = ref([]);
   let currentWord: Ref<string> = ref("");
   let wordSubmission: Ref<string> = ref("");
+  let gameRound:Ref<number> = ref(1);
+  let gameState:Ref<GameState> = ref(GameState.IDLE);
 
   let socket: Socket<ServerToClientEvents, ClientToServerEvents>;
 
@@ -62,12 +65,16 @@
       pageState.value = PageState.GAME;
     });
 
-    s.on('newPlayerData', (playerData:PlayerData) => {
+    s.on('updateGameData', (playerData:PlayerData, gameData:GameData) => {
       updatePlayerData(playerData);
+      gameRound.value = gameData.round;
+      gameState.value = gameData.gameState;
     });
 
-    s.on('newWord', (newWord:string) => {
+    s.on('newWord', (newWord:string, playerData:PlayerData, gameData:GameData) => {
       currentWord.value = newWord;
+      updatePlayerData(playerData);
+      gameState.value = gameData.gameState;
     });
   }
 
@@ -83,7 +90,12 @@
   }
 
   function submitWord() {
-    socket.emit('submitWord', wordSubmission.value, playerName.value);
+    socket.emit(
+      'submitWord',
+      currentRoomName.value,
+      playerName.value,
+      wordSubmission.value
+    );
   }
 
 </script>
@@ -112,18 +124,27 @@
 
   <main v-if="pageState == PageState.GAME">
     <h1>Room Name: {{ currentRoomName }}</h1>
+    <h2>Round: {{ gameRound }}</h2>
     <h2>Players</h2>
     <table>
-      <th><td>Name</td><td>Score</td><td>Ready</td></th>
+      <tr>
+        <th>Admin</th>
+        <th>Name</th>
+        <th>Score</th>
+        <th>Ready</th>
+      </tr>
       <tr v-for="p in roomPlayers" :key="p.name" >
+        <td>{{ p.isAdmin ? '➡️' : '' }}</td>
         <td>{{ p.name }}</td>
         <td>{{ p.score }}</td>
         <td>{{ p.ready ? '✅' : '_' }}</td>
       </tr>
     </table>
-    <button @click="toggleReady">Ready</button>
-    <h1>{{ currentWord }}</h1>
-    <div v-if="currentWord.length">
+    <div v-if="gameState === GameState.IDLE">
+      <button @click="toggleReady">Ready</button>
+    </div>
+    <div v-if="gameState === GameState.WRITING">
+      <h1>{{ currentWord }}</h1>
       <input type="text" v-model="wordSubmission">
       <button @click="submitWord">Submit</button>
     </div>

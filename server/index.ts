@@ -30,9 +30,9 @@ function randomArrayObject(arr:string[]):string {
 
 function getRandomWord():string {
   if (Math.random() > 0.5) {
-    return randomArrayObject(suffixes);
+    return `____${randomArrayObject(suffixes)}`;
   }
-  return randomArrayObject(prefixes);
+  return `${randomArrayObject(prefixes)}____`;
 }
 
 // Socket.IO connections
@@ -46,12 +46,16 @@ io.on('connection', (socket: Socket<
     } else if (rooms[roomName].playerExists(playerName)) {
       socket.emit('playerAlreadyExists');
     } else {
+      const game = rooms[roomName];
       const newPlayer = new Player(playerName);
-      rooms[roomName].addPlayer(newPlayer);
-      socket.emit('joinGame', roomName, rooms[roomName].getPlayerData())
+      game.addPlayer(newPlayer);
+      socket.emit('joinGame', roomName, game.getPlayerData())
       socket.join(roomName);
       io.to(roomName)
-        .emit('newPlayerData', rooms[roomName].getPlayerData());
+        .emit('updateGameData',
+          game.getPlayerData(),
+          game.getGameData()
+        );
     }
   });
 
@@ -67,21 +71,39 @@ io.on('connection', (socket: Socket<
   });
 
   socket.on('toggleReady', (roomName, playerName) => {
-    rooms[roomName].readyPlayerToggle(playerName);
+    const game = rooms[roomName];
+    game.readyPlayerToggle(playerName);
     io.to(roomName).emit(
-      'newPlayerData',
-      rooms[roomName].getPlayerData()
+      'updateGameData',
+      game.getPlayerData(),
+      game.getGameData()
     );
-    if (rooms[roomName].allPlayersReady()) {
+    if (game.allPlayersReady()) {
+      game.startWritingPhase()
       io.to(roomName).emit(
         'newWord',
-        getRandomWord()
+        getRandomWord(),
+        game.getPlayerData(),
+        game.getGameData()
       );
     }
   });
 
-  socket.on('submitWord', (word) => {
-
+  socket.on('submitWord', (roomName, playerName, word) => {
+    const game = rooms[roomName];
+    const player = game.getPlayer(playerName);
+    if (player) {
+      player.changeSubmission(word);
+      if (game.allWordsSubmitted()) {
+        game.scoreRound();
+        game.startIdlePhase();
+        io.to(roomName)
+          .emit('updateGameData',
+            game.getPlayerData(),
+            game.getGameData()
+          );
+      }
+    }
   });
 
   // Handle socket events
