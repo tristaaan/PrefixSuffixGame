@@ -22,6 +22,8 @@
   let playerName:Ref<string> = ref("");
   let currentRoomName:Ref<string> = ref("");
   let roomPlayers: Ref<PlayerData> = ref([]);
+  let currentWord: Ref<string> = ref("");
+  let wordSubmission: Ref<string> = ref("");
 
   let socket: Socket<ServerToClientEvents, ClientToServerEvents>;
 
@@ -38,6 +40,14 @@
   }
 
   function establishSocket(s:Socket<ServerToClientEvents, ClientToServerEvents>) {
+    s.on("roomDoesNotExist", () => {
+      alert(`The room '${joinRoomName.value}' does not exists`);
+    });
+
+    s.on("playerAlreadyExists", () => {
+      alert(`A player in that room already has the username ${joinPlayerName.value}`);
+    });
+
     s.on("gameCreated", (roomName:string, playerData: PlayerData) => {
       currentRoomName.value = roomName;
       updatePlayerData(playerData);
@@ -48,12 +58,16 @@
     s.on("joinGame", (roomName:string, playerData: PlayerData) => {
       currentRoomName.value = roomName;
       updatePlayerData(playerData);
+      playerName.value = joinPlayerName.value;
       pageState.value = PageState.GAME;
     });
 
     s.on('newPlayerData', (playerData:PlayerData) => {
-      console.log(playerData);
       updatePlayerData(playerData);
+    });
+
+    s.on('newWord', (newWord:string) => {
+      currentWord.value = newWord;
     });
   }
 
@@ -66,6 +80,10 @@
 
   function toggleReady() {
     socket.emit('toggleReady', currentRoomName.value, playerName.value);
+  }
+
+  function submitWord() {
+    socket.emit('submitWord', wordSubmission.value, playerName.value);
   }
 
 </script>
@@ -93,14 +111,22 @@
   </main>
 
   <main v-if="pageState == PageState.GAME">
-    <h1>{{ currentRoomName }}</h1>
+    <h1>Room Name: {{ currentRoomName }}</h1>
     <h2>Players</h2>
-    <ul>
-      <li v-for="p in roomPlayers" :key="p.name" >
-        {{ p.name }}: {{ p.score }} {{ p.ready ? '✅' : '_' }}
-      </li>
-    </ul>
+    <table>
+      <th><td>Name</td><td>Score</td><td>Ready</td></th>
+      <tr v-for="p in roomPlayers" :key="p.name" >
+        <td>{{ p.name }}</td>
+        <td>{{ p.score }}</td>
+        <td>{{ p.ready ? '✅' : '_' }}</td>
+      </tr>
+    </table>
     <button @click="toggleReady">Ready</button>
+    <h1>{{ currentWord }}</h1>
+    <div v-if="currentWord.length">
+      <input type="text" v-model="wordSubmission">
+      <button @click="submitWord">Submit</button>
+    </div>
   </main>
 </template>
 

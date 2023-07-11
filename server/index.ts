@@ -6,6 +6,7 @@ const http = require('http').createServer(app);
 const io = require('socket.io')(http);
 
 import {Game, Player} from '../shared/Game';
+import readWords from './readWords';
 import type { Socket } from 'socket.io';
 import type { ServerToClientEvents, ClientToServerEvents } from '../shared/types';
 
@@ -20,6 +21,20 @@ app.get('/', (req:Request, res:Response) => {
 
 const rooms: Record<string, Game> = {};
 
+const suffixes = readWords('suffixes.txt');
+const prefixes = readWords('prefixes.txt');
+
+function randomArrayObject(arr:string[]):string {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function getRandomWord():string {
+  if (Math.random() > 0.5) {
+    return randomArrayObject(suffixes);
+  }
+  return randomArrayObject(prefixes);
+}
+
 // Socket.IO connections
 io.on('connection', (socket: Socket<
   ClientToServerEvents,
@@ -31,9 +46,12 @@ io.on('connection', (socket: Socket<
     } else if (rooms[roomName].playerExists(playerName)) {
       socket.emit('playerAlreadyExists');
     } else {
+      const newPlayer = new Player(playerName);
+      rooms[roomName].addPlayer(newPlayer);
+      socket.emit('joinGame', roomName, rooms[roomName].getPlayerData())
       socket.join(roomName);
       io.to(roomName)
-        .emit('joinGame', roomName, rooms[roomName].getPlayerData());
+        .emit('newPlayerData', rooms[roomName].getPlayerData());
     }
   });
 
@@ -54,6 +72,16 @@ io.on('connection', (socket: Socket<
       'newPlayerData',
       rooms[roomName].getPlayerData()
     );
+    if (rooms[roomName].allPlayersReady()) {
+      io.to(roomName).emit(
+        'newWord',
+        getRandomWord()
+      );
+    }
+  });
+
+  socket.on('submitWord', (word) => {
+
   });
 
   // Handle socket events

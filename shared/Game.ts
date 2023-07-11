@@ -78,6 +78,10 @@ export class Game {
     }
   }
 
+  allPlayersReady():boolean {
+    return this.players.every((p) => p.ready);
+  }
+
   getPlayer(playerName:string): Player | undefined {
     return this.players.find((p) => p.name === playerName);
   }

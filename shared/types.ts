@@ -13,11 +13,12 @@ export interface ServerToClientEvents {
   joinGame: (roomName:string, playerData: PlayerData) => void;
   gameCreated: (roomName: string, playerData: PlayerData) => void;
   newPlayerData: (playerData:PlayerData) => void;
+  newWord: (word:string) => void;
 }
 
 export interface ClientToServerEvents {
   createGame: (playerName: string) => void;
   tryJoinGame: (roomName: string, playerName:string) => void;
-  submitWord: (word:string) => void;
   toggleReady: (roomName: string, playerName:string) => void;
+  submitWord: (word:string, playerName:string) => void;
 }
