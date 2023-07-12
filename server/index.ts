@@ -20,6 +20,7 @@ app.get('/', (req:Request, res:Response) => {
 });
 
 const rooms: Record<string, Game> = {};
+const socketIdByRoom: Record<string, string> = {};
 
 const suffixes = readWords('suffixes.txt');
 const prefixes = readWords('prefixes.txt');
@@ -47,7 +48,7 @@ io.on('connection', (socket: Socket<
       socket.emit('playerAlreadyExists');
     } else {
       const game = rooms[roomName];
-      const newPlayer = new Player(playerName);
+      const newPlayer = new Player(playerName, socket.id);
       game.addPlayer(newPlayer);
       socket.emit('joinGame', roomName, game.getPlayerData())
       socket.join(roomName);
@@ -56,18 +57,20 @@ io.on('connection', (socket: Socket<
           game.getPlayerData(),
           game.getGameData()
         );
+      socketIdByRoom[socket.id] = roomName;
     }
   });
 
   socket.on('createGame', (playerName) => {
     const game = new Game();
     const roomName = game.roomName;
-    const firstPlayer = new Player(playerName, true);
+    const firstPlayer = new Player(playerName, socket.id, true);
     game.addPlayer(firstPlayer);
     rooms[roomName] = game;
     socket.join(roomName);
     io.to(roomName)
       .emit('gameCreated', roomName, rooms[roomName].getPlayerData());
+    socketIdByRoom[socket.id] = roomName;
   });
 
   socket.on('toggleReady', (roomName, playerName) => {
@@ -108,7 +111,24 @@ io.on('connection', (socket: Socket<
 
   // Handle socket events
   socket.on('disconnect', () => {
-    console.log('A user disconnected');
+    const roomName = socketIdByRoom[socket.id];
+    const game = rooms[roomName];
+    if (game) {
+      game.removePlayerBySocketId(socket.id);
+
+      if (game.players.length === 0) {
+        // clear room
+        delete rooms[roomName];
+      } else {
+        // otherwise send update to the room with new player data
+        io.to(roomName)
+          .emit('updateGameData',
+            game.getPlayerData(),
+            game.getGameData()
+          );
+      }
+    }
+
   });
 });
 

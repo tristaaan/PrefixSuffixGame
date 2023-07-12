@@ -8,9 +8,14 @@ export class Player {
   score: number = 0;
   ready: boolean = false;
   isAdmin: boolean = false;
-  constructor(name: string, isFirstPlayer:boolean = false) {
+  socketId: string;
+  active: boolean = false;
+
+  constructor(name: string, socketId:string, isFirstPlayer:boolean = false) {
     this.name = name;
     this.isAdmin = isFirstPlayer;
+    this.socketId = socketId;
+    this.active = true;
   }
 
   changeSubmission(newVal:string) {
@@ -93,7 +98,18 @@ export class Game {
 
   removePlayer(playerName:string) {
     const index = this.players.findIndex((p) => p.name === playerName);
-    this.players.splice(index, 1);
+    const [player] = this.players.splice(index, 1);
+    if (player.isAdmin && this.players.length) {
+      this.players[0].isAdmin = true;
+    }
+  }
+
+  removePlayerBySocketId(id:string) {
+    const index = this.players.findIndex((p) => p.socketId === id);
+    const [player] = this.players.splice(index, 1);
+    if (player.isAdmin && this.players.length) {
+      this.players[0].isAdmin = true;
+    }
   }
 
   allWordsSubmitted():boolean {
