@@ -1,8 +1,15 @@
-export type PlayerData = {
+export interface LastSubmission {
+  stem: string;
+  submission: string;
+  isSubmissionPrefix: boolean;
+}
+
+export interface PlayerData {
   name: string,
   score: number,
   ready: boolean,
   isAdmin: boolean,
+  lastSubmission: LastSubmission | null,
 }[];
 
 export enum GameState {
@@ -20,10 +27,10 @@ export interface ServerToClientEvents {
   disconnect: () => void;
   roomDoesNotExist: () => void;
   playerAlreadyExists: () => void;
-  joinGame: (roomName:string, playerData: PlayerData) => void;
-  gameCreated: (roomName: string, playerData: PlayerData) => void;
-  updateGameData: (playerData:PlayerData, gameData:GameData) => void;
-  newWord: (word:string, playerData:PlayerData, gameData:GameData) => void;
+  joinGame: (roomName:string, playerData: PlayerData[]) => void;
+  gameCreated: (roomName: string, playerData: PlayerData[]) => void;
+  updateGameData: (playerData:PlayerData[], gameData:GameData) => void;
+  newWord: (word:string, playerData:PlayerData[], gameData:GameData) => void;
 }
 
 export interface ClientToServerEvents {

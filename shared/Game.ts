@@ -1,10 +1,14 @@
-import { randomString } from './util';
+import { randomString, randomArrayObject } from './util';
 import { GameState } from './types';
-import type { GameData, PlayerData } from './types';
+
+import type { PlayerData, LastSubmission } from './types';
+
+const BLANK = "____" as const;
 
 export class Player {
   name: string = "";
   submission: string = "";
+  lastSubmission: LastSubmission | null = null;
   score: number = 0;
   ready: boolean = false;
   isAdmin: boolean = false;
@@ -22,7 +26,12 @@ export class Player {
     this.submission = newVal;
   }
 
-  clearSubmission() {
+  clearSubmission(previousStem:string, isSubmissionPrefix:boolean) {
+    this.lastSubmission = {
+      stem: previousStem.replace(BLANK, ''),
+      submission: this.submission,
+      isSubmissionPrefix: isSubmissionPrefix
+    };
     this.submission = "";
   }
 
@@ -30,12 +39,13 @@ export class Player {
     this.score += val;
   }
 
-  get playerPublicInfo() {
+  get playerPublicInfo():PlayerData {
     return {
       name: this.name,
       score: this.score,
       ready: this.ready,
-      isAdmin: this.isAdmin
+      isAdmin: this.isAdmin,
+      lastSubmission: this.lastSubmission
     };
   }
 
@@ -49,9 +59,15 @@ export class Game {
   roomName: string = ""
   round:number = 1;
   gameState:GameState = GameState.IDLE;
+  currentWord: string = "";
+  isSubmissionPrefix: boolean = false;
+  prefixes :string[] = [];
+  suffixes :string[] = [];
 
-  constructor() {
+  constructor(prefixes: string[], suffixes: string[]) {
     this.roomName = randomString(6);
+    this.prefixes = prefixes;
+    this.suffixes = suffixes;
   }
 
   getGameData() {
@@ -79,16 +95,27 @@ export class Game {
   newRound() {
     this.round += 1;
     for (const p of this.players) {
-      p.clearSubmission();
+      p.clearSubmission(this.currentWord, this.isSubmissionPrefix);
       p.ready = false;
     }
+  }
+
+  newWord():string {
+    if (Math.random() > 0.5) {
+      this.currentWord = `${BLANK}${randomArrayObject(this.suffixes)}`;
+      this.isSubmissionPrefix = true;
+    } else {
+      this.currentWord = `${randomArrayObject(this.prefixes)}${BLANK}`;
+      this.isSubmissionPrefix = false;
+    }
+    return this.currentWord;
   }
 
   playerExists(name:string) {
     return this.players.findIndex((p) => p.name === name) >= 0;
   }
 
-  getPlayerData() {
+  getPlayerData(): PlayerData[] {
     return this.players.map((p) => p.playerPublicInfo);
   }
 

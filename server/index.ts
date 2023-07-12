@@ -25,17 +25,6 @@ const socketIdByRoom: Record<string, string> = {};
 const suffixes = readWords('suffixes.txt');
 const prefixes = readWords('prefixes.txt');
 
-function randomArrayObject(arr:string[]):string {
-  return arr[Math.floor(Math.random() * arr.length)];
-}
-
-function getRandomWord():string {
-  if (Math.random() > 0.5) {
-    return `____${randomArrayObject(suffixes)}`;
-  }
-  return `${randomArrayObject(prefixes)}____`;
-}
-
 // Socket.IO connections
 io.on('connection', (socket: Socket<
   ClientToServerEvents,
@@ -62,7 +51,7 @@ io.on('connection', (socket: Socket<
   });
 
   socket.on('createGame', (playerName) => {
-    const game = new Game();
+    const game = new Game(prefixes, suffixes);
     const roomName = game.roomName;
     const firstPlayer = new Player(playerName, socket.id, true);
     game.addPlayer(firstPlayer);
@@ -85,7 +74,7 @@ io.on('connection', (socket: Socket<
       game.startWritingPhase()
       io.to(roomName).emit(
         'newWord',
-        getRandomWord(),
+        game.newWord(),
         game.getPlayerData(),
         game.getGameData()
       );

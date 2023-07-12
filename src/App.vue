@@ -23,7 +23,7 @@
 
   let playerName:Ref<string> = ref("");
   let currentRoomName:Ref<string> = ref("");
-  let roomPlayers: Ref<PlayerData> = ref([]);
+  let roomPlayers: Ref<PlayerData[]> = ref([]);
   let currentWord: Ref<string> = ref("");
   let wordSubmission: Ref<string> = ref("");
   let gameRound:Ref<number> = ref(1);
@@ -52,34 +52,35 @@
       alert(`A player in that room already has the username ${joinPlayerName.value}`);
     });
 
-    s.on("gameCreated", (roomName:string, playerData: PlayerData) => {
+    s.on("gameCreated", (roomName:string, playerData: PlayerData[]) => {
       currentRoomName.value = roomName;
       updatePlayerData(playerData);
       playerName.value = newGamePlayerName.value;
       pageState.value = PageState.GAME;
     });
 
-    s.on("joinGame", (roomName:string, playerData: PlayerData) => {
+    s.on("joinGame", (roomName:string, playerData: PlayerData[]) => {
       currentRoomName.value = roomName;
       updatePlayerData(playerData);
       playerName.value = joinPlayerName.value;
       pageState.value = PageState.GAME;
     });
 
-    s.on('updateGameData', (playerData:PlayerData, gameData:GameData) => {
+    s.on('updateGameData', (playerData: PlayerData[], gameData:GameData) => {
       updatePlayerData(playerData);
       gameRound.value = gameData.round;
       gameState.value = gameData.gameState;
     });
 
-    s.on('newWord', (newWord:string, playerData:PlayerData, gameData:GameData) => {
+    s.on('newWord', (newWord:string, playerData: PlayerData[], gameData:GameData) => {
       currentWord.value = newWord;
       updatePlayerData(playerData);
       gameState.value = gameData.gameState;
+      wordSubmission.value = "";
     });
   }
 
-  function updatePlayerData(playerData: PlayerData) {
+  function updatePlayerData(playerData: PlayerData[]) {
     roomPlayers.value = [];
     for (const d of playerData) {
       roomPlayers.value.push(d);
@@ -95,7 +96,7 @@
       'submitWord',
       currentRoomName.value,
       playerName.value,
-      wordSubmission.value
+      wordSubmission.value.toLowerCase()
     );
   }
 
@@ -106,11 +107,11 @@
     <h2>Join Game</h2>
     <label>
       Room ID
-      <input type="text" v-model="joinRoomName">
+      <input type="text" v-model.trim="joinRoomName">
     </label>
     <label>
       Player Name
-      <input type="text" v-model="joinPlayerName">
+      <input type="text" v-model.trim="joinPlayerName">
     </label>
     <button @click="joinGame">JOIN</button>
     <br>
@@ -118,7 +119,7 @@
     <h2>Start New Game</h2>
     <label>
       Player Name
-      <input type="text" v-model="newGamePlayerName">
+      <input type="text" v-model.trim="newGamePlayerName">
     </label>
     <button @click="startNewGame">Start New Game</button>
   </main>
@@ -128,30 +129,57 @@
     <h2>Round: {{ gameRound }}</h2>
     <h2>Players</h2>
     <table>
-      <tr>
-        <th>Admin</th>
-        <th>Name</th>
-        <th>Score</th>
-        <th>Ready</th>
-      </tr>
-      <tr v-for="p in roomPlayers" :key="p.name" >
-        <td>{{ p.isAdmin ? '➡️' : '' }}</td>
-        <td>{{ p.name }}</td>
-        <td>{{ p.score }}</td>
-        <td>{{ p.ready ? '✅' : '_' }}</td>
-      </tr>
+      <thead>
+        <tr>
+          <th>Admin</th>
+          <th>Name</th>
+          <th>Score</th>
+          <th v-if="gameRound > 1">Last word</th>
+          <th>Ready</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="p in roomPlayers" :key="p.name" >
+          <td>{{ p.isAdmin ? '➡️' : '' }}</td>
+          <td>{{ p.name }}</td>
+          <td>{{ p.score }}</td>
+          <td v-if="gameRound > 1 && p.lastSubmission">
+            <span v-if="p.lastSubmission.isSubmissionPrefix">
+              <span class="last-submission">{{ p.lastSubmission.submission }}</span>
+              <span>{{ p.lastSubmission.stem }}</span>
+            </span>
+            <span v-else>
+              <span>{{ p.lastSubmission.stem }}</span>
+              <span class="last-submission">{{ p.lastSubmission.submission }}</span>
+            </span>
+          </td>
+          <td v-if="gameRound > 1 && !p.lastSubmission"/>
+          <td>{{ p.ready ? '✅' : '_' }}</td>
+        </tr>
+      </tbody>
     </table>
     <div v-if="gameState === GameState.IDLE">
       <button @click="toggleReady">Ready</button>
     </div>
     <div v-if="gameState === GameState.WRITING">
       <h1>{{ currentWord }}</h1>
-      <input type="text" v-model="wordSubmission">
+      <input type="text" v-model.trim="wordSubmission">
       <button @click="submitWord">Submit</button>
     </div>
   </main>
 </template>
 
 <style scoped>
+  .last-submission{
+    text-decoration: underline;
+  }
 
+  tr td {
+    padding: 3px 25px;
+    border-bottom: 1px solid #bfbfbf;
+  }
+
+  table {
+    border-collapse: collapse;
+  }
 </style>

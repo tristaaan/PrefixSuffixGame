@@ -12,3 +12,7 @@ export const randomString = (size:number): string => {
 
   return objectId;
 };
+
+export const randomArrayObject = (arr:string[]):string => {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
