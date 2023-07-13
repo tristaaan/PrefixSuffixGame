@@ -128,7 +128,7 @@
       @click="joinGame"
       :disabled="joinRoomName.length === 0 || joinPlayerName.length === 0"
     >
-      JOIN
+      Join
     </button>
     <br>
 
@@ -193,6 +193,24 @@
         :disabled="wordSubmission.length === 0">Submit</button>
     </div>
   </main>
+  <footer>
+    <h2>Rules:</h2>
+    <ul>
+      <li>A word is shown to players with a blank space either before or after. (e.g., <em>___ball</em> or <em>up___</em>)</li>
+      <li>Players submit a word or fragment that fits in that space. (e.g., <em>foot</em> for <em>___ball</em>  or <em>draft</em> for <em>up___</em>)</li>
+      <li>
+        Once all players have submitted a word players are assigned points based on the following:
+        <ul>
+          <li>If exactly two players have the same word they both get 3 points.</li>
+          <li>If more than two players have the same word everone gets 1 point.</li>
+          <li>If no words match no players get any points.</li>
+        </ul>
+      </li>
+      <li>
+        Repeat for as long as you want.
+      </li>
+    </ul>
+  </footer>
 </template>
 
 <style scoped>
