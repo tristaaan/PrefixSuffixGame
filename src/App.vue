@@ -28,6 +28,7 @@
   let wordSubmission: Ref<string> = ref("");
   let gameRound:Ref<number> = ref(1);
   let gameState:Ref<GameState> = ref(GameState.IDLE);
+  let copyStatus:Ref<string> = ref('');
 
   let socket: Socket<ServerToClientEvents, ClientToServerEvents>;
 
@@ -100,6 +101,16 @@
     );
   }
 
+  function copyRoomName() {
+    navigator.clipboard.writeText(currentRoomName.value)
+      .then(() => {
+        copyStatus.value = "✅";
+        setTimeout(() => {
+          copyStatus.value = '';
+        }, 3000);
+      });
+  }
+
 </script>
 
 <template>
@@ -113,7 +124,12 @@
       Player Name
       <input type="text" v-model.trim="joinPlayerName">
     </label>
-    <button @click="joinGame">JOIN</button>
+    <button
+      @click="joinGame"
+      :disabled="joinRoomName.length === 0 || joinPlayerName.length === 0"
+    >
+      JOIN
+    </button>
     <br>
 
     <h2>Start New Game</h2>
@@ -121,11 +137,19 @@
       Player Name
       <input type="text" v-model.trim="newGamePlayerName">
     </label>
-    <button @click="startNewGame">Start New Game</button>
+    <button
+      @click="startNewGame"
+      :disabled="newGamePlayerName.length === 0"
+    >
+      Start New Game
+    </button>
   </main>
 
   <main v-if="pageState == PageState.GAME">
-    <h1>Room Name: {{ currentRoomName }}</h1>
+    <h1>
+      Room Name: {{ currentRoomName }}
+    </h1>
+    <button @click="copyRoomName">Copy Room Name {{ copyStatus }}</button>
     <h2>Round: {{ gameRound }}</h2>
     <h2>Players</h2>
     <table>
@@ -164,7 +188,9 @@
     <div v-if="gameState === GameState.WRITING">
       <h1>{{ currentWord }}</h1>
       <input type="text" v-model.trim="wordSubmission">
-      <button @click="submitWord">Submit</button>
+      <button
+        @click="submitWord"
+        :disabled="wordSubmission.length === 0">Submit</button>
     </div>
   </main>
 </template>
@@ -181,5 +207,13 @@
 
   table {
     border-collapse: collapse;
+  }
+
+  button {
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor:not-allowed;
   }
 </style>
