@@ -89,12 +89,12 @@ io.on('connection', (socket: Socket<
       if (game.allWordsSubmitted()) {
         game.scoreRound();
         game.startIdlePhase();
-        io.to(roomName)
-          .emit('updateGameData',
-            game.getPlayerData(),
-            game.getGameData()
-          );
       }
+      io.to(roomName)
+        .emit('updateGameData',
+          game.getPlayerData(),
+          game.getGameData()
+        );
     }
   });
 

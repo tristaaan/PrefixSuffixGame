@@ -24,6 +24,7 @@ export class Player {
 
   changeSubmission(newVal:string) {
     this.submission = newVal;
+    this.ready = true;
   }
 
   clearSubmission(previousStem:string, isSubmissionPrefix:boolean) {
