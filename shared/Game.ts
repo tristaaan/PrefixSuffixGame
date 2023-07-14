@@ -113,7 +113,7 @@ export class Game {
   }
 
   playerExists(name:string) {
-    return this.players.findIndex((p) => p.name === name) >= 0;
+    return this.players.findIndex((p) => p.name === name.toLocaleLowerCase()) >= 0;
   }
 
   getPlayerData(): PlayerData[] {
@@ -125,7 +125,7 @@ export class Game {
   }
 
   removePlayer(playerName:string) {
-    const index = this.players.findIndex((p) => p.name === playerName);
+    const index = this.players.findIndex((p) => p.name === playerName.toLocaleLowerCase());
     const [player] = this.players.splice(index, 1);
     if (player.isAdmin && this.players.length) {
       this.players[0].isAdmin = true;
@@ -145,11 +145,12 @@ export class Game {
   }
 
   readyPlayerToggle(playerName:string) {
-    const player = this.getPlayer(playerName);
+    const lowerName = playerName.toLocaleLowerCase();
+    const player = this.getPlayer(lowerName);
     if (player) {
       player.toggleReady();
     } else {
-      console.warn(`no player found with name '${playerName}'`);
+      console.warn(`no player found with name '${lowerName}'`);
     }
   }
 
@@ -164,7 +165,7 @@ export class Game {
   }
 
   getPlayer(playerName:string): Player | undefined {
-    return this.players.find((p) => p.name === playerName);
+    return this.players.find((p) => p.name === playerName.toLocaleLowerCase());
   }
 
   scoreRound() {

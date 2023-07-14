@@ -61,14 +61,14 @@
     s.on("gameCreated", (roomName:string, playerData: PlayerData[]) => {
       currentRoomName.value = roomName;
       updatePlayerData(playerData);
-      playerName.value = newGamePlayerName.value;
+      playerName.value = newGamePlayerName.value.toLocaleLowerCase();
       pageState.value = PageState.GAME;
     });
 
     s.on("joinGame", (roomName:string, playerData: PlayerData[]) => {
       currentRoomName.value = roomName;
       updatePlayerData(playerData);
-      playerName.value = joinPlayerName.value;
+      playerName.value = joinPlayerName.value.toLocaleLowerCase();
       pageState.value = PageState.GAME;
     });
 
@@ -206,8 +206,8 @@
       <li>
         Once all players have made submissions players are assigned points based on the following:
         <ul>
-          <li>If exactly two players have the same word they both get 3 points.</li>
-          <li>If more than two players have the same word everone gets 1 point.</li>
+          <li>If a pair of players have the same word they both get 3 points.</li>
+          <li>If more than two players have the same word everyone gets 1 point.</li>
           <li>If no words match no players get any points.</li>
         </ul>
       </li>
@@ -223,9 +223,19 @@
     text-decoration: underline;
   }
 
-  tr td {
+  tr td, tr th {
     padding: 3px 25px;
     border-bottom: 1px solid #bfbfbf;
+    border-right: 1px solid #bfbfbf;
+  }
+
+  tr:last-child td {
+    border-bottom: none;
+  }
+
+  tr th:last-child,
+  tr td:last-child {
+    border-right: none;
   }
 
   table {
