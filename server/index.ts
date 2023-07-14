@@ -6,6 +6,7 @@ const http = require('http').createServer(app);
 const io = require('socket.io')(http);
 
 import {Game, Player} from '../shared/Game';
+import { validPlayerName } from '../shared/util';
 import readWords from './readWords';
 import type { Socket } from 'socket.io';
 import type { ServerToClientEvents, ClientToServerEvents } from '../shared/types';
@@ -35,6 +36,8 @@ io.on('connection', (socket: Socket<
       socket.emit('roomDoesNotExist');
     } else if (rooms[roomName].playerExists(playerName)) {
       socket.emit('playerAlreadyExists');
+    } else if (!validPlayerName(playerName)) {
+      socket.emit('invalidPlayerName');
     } else {
       const game = rooms[roomName];
       const newPlayer = new Player(playerName, socket.id);

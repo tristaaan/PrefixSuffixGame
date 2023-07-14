@@ -27,6 +27,7 @@ export interface ServerToClientEvents {
   disconnect: () => void;
   roomDoesNotExist: () => void;
   playerAlreadyExists: () => void;
+  invalidPlayerName: () => void;
   joinGame: (roomName:string, playerData: PlayerData[]) => void;
   gameCreated: (roomName: string, playerData: PlayerData[]) => void;
   updateGameData: (playerData:PlayerData[], gameData:GameData) => void;

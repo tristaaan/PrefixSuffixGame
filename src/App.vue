@@ -3,6 +3,7 @@
   import type { Ref } from 'vue';
   import { io, Socket } from 'socket.io-client';
 
+  import { MIN_NAME_LENGTH, MAX_NAME_LENGTH } from '../shared/util';
   import { GameState } from '../shared/types';
   import type {
     ServerToClientEvents,
@@ -51,6 +52,10 @@
 
     s.on("playerAlreadyExists", () => {
       alert(`A player in that room already has the username ${joinPlayerName.value}`);
+    });
+
+    s.on('invalidPlayerName', () => {
+      alert(`Player name must be between ${MIN_NAME_LENGTH} to ${MAX_NAME_LENGTH} characters in length`)
     });
 
     s.on("gameCreated", (roomName:string, playerData: PlayerData[]) => {
@@ -195,11 +200,11 @@
   </main>
   <footer>
     <h2>Rules:</h2>
-    <ul>
+    <ol>
       <li>A word is shown to players with a blank space either before or after. (e.g., <em>___ball</em> or <em>up___</em>)</li>
       <li>Players submit a word or fragment that fits in that space. (e.g., <em>foot</em> for <em>___ball</em>  or <em>draft</em> for <em>up___</em>)</li>
       <li>
-        Once all players have submitted a word players are assigned points based on the following:
+        Once all players have made submissions players are assigned points based on the following:
         <ul>
           <li>If exactly two players have the same word they both get 3 points.</li>
           <li>If more than two players have the same word everone gets 1 point.</li>
@@ -209,7 +214,7 @@
       <li>
         Repeat for as long as you want.
       </li>
-    </ul>
+    </ol>
   </footer>
 </template>
 

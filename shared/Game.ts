@@ -16,7 +16,7 @@ export class Player {
   active: boolean = false;
 
   constructor(name: string, socketId:string, isFirstPlayer:boolean = false) {
-    this.name = name;
+    this.name = name.toLocaleLowerCase().trim();
     this.isAdmin = isFirstPlayer;
     this.socketId = socketId;
     this.active = true;

@@ -14,3 +14,10 @@ export const randomString = (size:number): string => {
 export const randomArrayObject = (arr:string[]):string => {
   return arr[Math.floor(Math.random() * arr.length)];
 }
+
+export const MIN_NAME_LENGTH = 3 as const;
+export const MAX_NAME_LENGTH = 18 as const;
+
+export const validPlayerName = (name:string) => {
+  return name.length >= MIN_NAME_LENGTH && name.length <= MAX_NAME_LENGTH;
+}
