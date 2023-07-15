@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import { ref } from 'vue';
-  import type { Ref } from 'vue';
+  import type { Ref, ComputedRef } from 'vue';
   import { io, Socket } from 'socket.io-client';
 
   import { MIN_NAME_LENGTH, MAX_NAME_LENGTH } from '../shared/util';
@@ -11,6 +11,7 @@
     PlayerData,
     GameData
   } from '../shared/types';
+  import { Game } from '../shared/Game';
 
   enum PageState {
     LOBBY = "lobby",
@@ -25,10 +26,8 @@
   let playerName:Ref<string> = ref("");
   let currentRoomName:Ref<string> = ref("");
   let roomPlayers: Ref<PlayerData[]> = ref([]);
-  let currentWord: Ref<string> = ref("");
   let wordSubmission: Ref<string> = ref("");
-  let gameRound:Ref<number> = ref(1);
-  let gameState:Ref<GameState> = ref(GameState.IDLE);
+  let gameData: Ref<GameData> = ref(Game.initialGameData());
   let copyStatus:Ref<string> = ref('');
 
   let socket: Socket<ServerToClientEvents, ClientToServerEvents>;
@@ -72,17 +71,9 @@
       pageState.value = PageState.GAME;
     });
 
-    s.on('updateGameData', (playerData: PlayerData[], gameData:GameData) => {
+    s.on('updateGameData', (playerData: PlayerData[], _gameData:GameData) => {
       updatePlayerData(playerData);
-      gameRound.value = gameData.round;
-      gameState.value = gameData.gameState;
-    });
-
-    s.on('newWord', (newWord:string, playerData: PlayerData[], gameData:GameData) => {
-      currentWord.value = newWord;
-      updatePlayerData(playerData);
-      gameState.value = gameData.gameState;
-      wordSubmission.value = "";
+      gameData.value = _gameData;
     });
   }
 
@@ -155,7 +146,7 @@
       Room Name: {{ currentRoomName }}
     </h1>
     <button @click="copyRoomName">Copy Room Name {{ copyStatus }}</button>
-    <h2>Round: {{ gameRound }}</h2>
+    <h2>Round: {{ gameData.round }}</h2>
     <h2>Players</h2>
     <table>
       <thead>
@@ -163,7 +154,7 @@
           <th>Admin</th>
           <th>Name</th>
           <th>Score</th>
-          <th v-if="gameRound > 1">Last word</th>
+          <th v-if="(gameData.round ?? 0) > 1">Last word</th>
           <th>Ready</th>
         </tr>
       </thead>
@@ -172,7 +163,7 @@
           <td>{{ p.isAdmin ? '➡️' : '' }}</td>
           <td>{{ p.name }}</td>
           <td>{{ p.score }}</td>
-          <td v-if="gameRound > 1 && p.lastSubmission">
+          <td v-if="gameData.round > 1 && p.lastSubmission">
             <span v-if="p.lastSubmission.isSubmissionPrefix">
               <span class="last-submission">{{ p.lastSubmission.submission }}</span>
               <span>{{ p.lastSubmission.stem }}</span>
@@ -182,16 +173,16 @@
               <span class="last-submission">{{ p.lastSubmission.submission }}</span>
             </span>
           </td>
-          <td v-if="gameRound > 1 && !p.lastSubmission"/>
+          <td v-if="gameData.round > 1 && !p.lastSubmission"/>
           <td>{{ p.ready ? '✅' : '_' }}</td>
         </tr>
       </tbody>
     </table>
-    <div v-if="gameState === GameState.IDLE">
+    <div v-if="gameData.gameState === GameState.IDLE">
       <button @click="toggleReady">Ready</button>
     </div>
-    <div v-if="gameState === GameState.WRITING">
-      <h1>{{ currentWord }}</h1>
+    <div v-if="gameData.gameState === GameState.WRITING">
+      <h1>{{ gameData.currentWord }}</h1>
       <input type="text" v-model.trim="wordSubmission">
       <button
         @click="submitWord"

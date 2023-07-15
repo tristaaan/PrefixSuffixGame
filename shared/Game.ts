@@ -1,7 +1,7 @@
 import { randomString, randomArrayObject } from './util';
 import { GameState } from './types';
 
-import type { PlayerData, LastSubmission } from './types';
+import type { PlayerData, LastSubmission, GameData } from './types';
 
 const BLANK = "____" as const;
 
@@ -71,8 +71,20 @@ export class Game {
     this.suffixes = suffixes;
   }
 
-  getGameData() {
-    return { round: this.round, gameState: this.gameState}
+  static initialGameData():GameData {
+    return {
+      gameState: GameState.IDLE,
+      round: 0,
+      currentWord: ''
+    };
+  }
+
+  getGameData():GameData {
+    return {
+      round: this.round,
+      gameState: this.gameState,
+      currentWord: this.currentWord
+    }
   }
 
   startIdlePhase() {
@@ -84,6 +96,7 @@ export class Game {
   startWritingPhase() {
     this.unReadyPlayers();
     this.gameState = GameState.WRITING;
+    this.currentWord = this.newWord();
   }
 
   newGame() {

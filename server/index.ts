@@ -68,20 +68,14 @@ io.on('connection', (socket: Socket<
   socket.on('toggleReady', (roomName, playerName) => {
     const game = rooms[roomName];
     game.readyPlayerToggle(playerName);
+    if (game.allPlayersReady()) {
+      game.startWritingPhase();
+    }
     io.to(roomName).emit(
       'updateGameData',
       game.getPlayerData(),
       game.getGameData()
     );
-    if (game.allPlayersReady()) {
-      game.startWritingPhase()
-      io.to(roomName).emit(
-        'newWord',
-        game.newWord(),
-        game.getPlayerData(),
-        game.getGameData()
-      );
-    }
   });
 
   socket.on('submitWord', (roomName, playerName, word) => {

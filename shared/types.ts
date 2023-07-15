@@ -20,6 +20,7 @@ export enum GameState {
 export type GameData = {
   round: number;
   gameState: GameState;
+  currentWord: string;
 }
 
 export interface ServerToClientEvents {
@@ -31,7 +32,6 @@ export interface ServerToClientEvents {
   joinGame: (roomName:string, playerData: PlayerData[]) => void;
   gameCreated: (roomName: string, playerData: PlayerData[]) => void;
   updateGameData: (playerData:PlayerData[], gameData:GameData) => void;
-  newWord: (word:string, playerData:PlayerData[], gameData:GameData) => void;
 }
 
 export interface ClientToServerEvents {
