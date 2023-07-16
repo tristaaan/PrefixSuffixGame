@@ -12,6 +12,7 @@
     GameData
   } from '../shared/types';
   import { Game } from '../shared/Game';
+  import ScoreCard from './components/ScoreCard.vue';
 
   enum PageState {
     LOBBY = "lobby",
@@ -35,7 +36,7 @@
       return player.isAdmin;
     }
     return false
-  })
+  });
 
   let socket: Socket<ServerToClientEvents, ClientToServerEvents>;
 
@@ -202,7 +203,9 @@
           </td>
           <td>{{ p.ready ? '✅' : '_' }}</td>
           <td>{{ p.name }}</td>
-          <td>{{ p.score }}</td>
+          <td>
+            <ScoreCard :score="p.score"/>
+          </td>
           <td v-if="gameData.round > 1 && p.lastSubmission">
             <span v-if="p.lastSubmission.isSubmissionPrefix">
               <span class="last-submission">{{ p.lastSubmission.submission }}</span>
