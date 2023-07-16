@@ -133,6 +133,11 @@ export class Game {
     return this.players.map((p) => p.playerPublicInfo);
   }
 
+  getGameAdmin(): Player | undefined {
+    // ideally this shouldn't ever be able to be undefined?
+    return this.players.find((p) => p.isAdmin);
+  }
+
   addPlayer(player:Player) {
     this.players.push(player);
   }

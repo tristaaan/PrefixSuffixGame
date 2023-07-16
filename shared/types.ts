@@ -31,7 +31,7 @@ export interface ServerToClientEvents {
   invalidPlayerName: () => void;
   joinGame: (roomName:string, playerData: PlayerData[]) => void;
   gameCreated: (roomName: string, playerData: PlayerData[]) => void;
-  updateGameData: (playerData:PlayerData[], gameData:GameData) => void;
+  updateGameData: (playerData:PlayerData[], gameData:GameData, kickedPlayer?: string) => void;
 }
 
 export interface ClientToServerEvents {
@@ -39,4 +39,6 @@ export interface ClientToServerEvents {
   tryJoinGame: (roomName: string, playerName:string) => void;
   toggleReady: (roomName: string, playerName:string) => void;
   submitWord: (roomName: string, playerName:string, word:string) => void;
+  kickPlayer: (roomName: string, playerName:string) => void;
+  skipPlayer: (roomName: string, playerName:string) => void;
 }

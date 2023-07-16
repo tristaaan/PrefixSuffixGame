@@ -95,7 +95,25 @@ io.on('connection', (socket: Socket<
     }
   });
 
-  // Handle socket events
+  socket.on('kickPlayer', (roomName, playerName) => {
+    // assert admin
+    const game = rooms[roomName];
+    const adminPlayer = rooms[roomName].getGameAdmin();
+    if (adminPlayer?.socketId === socket.id) {
+      game.removePlayer(playerName);
+      io.to(roomName)
+        .emit('updateGameData',
+          game.getPlayerData(),
+          game.getGameData(),
+          playerName
+        );
+    }
+  })
+
+  socket.on('skipPlayer', (roomName, playerName) => {
+
+  });
+
   socket.on('disconnect', () => {
     const roomName = socketIdByRoom[socket.id];
     const game = rooms[roomName];
@@ -114,7 +132,6 @@ io.on('connection', (socket: Socket<
           );
       }
     }
-
   });
 });
 

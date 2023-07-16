@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { ref } from 'vue';
+  import { ref, computed } from 'vue';
   import type { Ref, ComputedRef } from 'vue';
   import { io, Socket } from 'socket.io-client';
 
@@ -29,6 +29,13 @@
   let wordSubmission: Ref<string> = ref("");
   let gameData: Ref<GameData> = ref(Game.initialGameData());
   let copyStatus:Ref<string> = ref('');
+  let currentPlayerIsAdmin: ComputedRef<boolean> = computed(() => {
+    const player = roomPlayers.value.find((p) => p.name === playerName.value);
+    if (player) {
+      return player.isAdmin;
+    }
+    return false
+  })
 
   let socket: Socket<ServerToClientEvents, ClientToServerEvents>;
 
@@ -71,9 +78,13 @@
       pageState.value = PageState.GAME;
     });
 
-    s.on('updateGameData', (playerData: PlayerData[], _gameData:GameData) => {
+    s.on('updateGameData', (playerData: PlayerData[], _gameData:GameData, kickedPlayer?:string) => {
       updatePlayerData(playerData);
       gameData.value = _gameData;
+      if (kickedPlayer && kickedPlayer === playerName.value) {
+        s.disconnect();
+        window.location.reload();
+      }
     });
   }
 
@@ -105,6 +116,28 @@
           copyStatus.value = '';
         }, 3000);
       });
+  }
+
+  function adminSkip(e:Event) {
+    const skippedPlayer = (e.target as HTMLElement).dataset.playerName;
+    if (skippedPlayer) {
+      socket.emit(
+        'skipPlayer',
+        currentRoomName.value,
+        skippedPlayer
+      );
+    }
+  }
+
+  function adminKick (e:Event) {
+    const kickedPlayer = (e.target as HTMLElement).dataset.playerName;
+    if (kickedPlayer && confirm(`Are you sure you want to kick ${kickedPlayer}?`)) {
+      socket.emit(
+        'kickPlayer',
+        currentRoomName.value,
+        kickedPlayer
+      );
+    }
   }
 
 </script>
@@ -151,16 +184,23 @@
     <table>
       <thead>
         <tr>
-          <th>Admin</th>
+          <th v-if="currentPlayerIsAdmin">Admin</th>
+          <th>Ready</th>
           <th>Name</th>
           <th>Score</th>
           <th v-if="(gameData.round ?? 0) > 1">Last word</th>
-          <th>Ready</th>
         </tr>
       </thead>
       <tbody>
         <tr v-for="p in roomPlayers" :key="p.name" >
-          <td>{{ p.isAdmin ? '➡️' : '' }}</td>
+          <td v-if="currentPlayerIsAdmin">
+            <span v-if="p.isAdmin">➡️</span>
+            <span v-else>
+              <button @click="adminSkip" :data-player-name="p.name">skip</button>
+              <button @click="adminKick" :data-player-name="p.name">kick</button>
+            </span>
+          </td>
+          <td>{{ p.ready ? '✅' : '_' }}</td>
           <td>{{ p.name }}</td>
           <td>{{ p.score }}</td>
           <td v-if="gameData.round > 1 && p.lastSubmission">
@@ -174,7 +214,6 @@
             </span>
           </td>
           <td v-if="gameData.round > 1 && !p.lastSubmission"/>
-          <td>{{ p.ready ? '✅' : '_' }}</td>
         </tr>
       </tbody>
     </table>
