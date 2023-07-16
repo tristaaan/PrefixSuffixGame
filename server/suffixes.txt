@@ -32,6 +32,7 @@ child
 cloth
 comb
 come
+cow
 cut
 dish
 dog
@@ -54,7 +55,6 @@ give
 grade
 guard
 hair
-hand
 hand
 hare
 head
@@ -102,6 +102,7 @@ rack
 ray
 read
 ring
+right
 road
 roll
 roof
