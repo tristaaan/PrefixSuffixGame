@@ -145,16 +145,21 @@ export class Game {
   removePlayer(playerName:string) {
     const index = this.players.findIndex((p) => p.name === playerName.toLocaleLowerCase());
     const [player] = this.players.splice(index, 1);
-    if (player.isAdmin && this.players.length) {
-      this.players[0].isAdmin = true;
+    if (index >= 0) {
+      if (player.isAdmin && this.players.length) {
+        this.players[0].isAdmin = true;
+      }
     }
   }
 
   removePlayerBySocketId(id:string) {
     const index = this.players.findIndex((p) => p.socketId === id);
-    const [player] = this.players.splice(index, 1);
-    if (player.isAdmin && this.players.length) {
-      this.players[0].isAdmin = true;
+    if (index >= 0) {
+      // if a player is kicked and then disconnected a negative index could remove the last player in the list
+      const [player] = this.players.splice(index, 1);
+      if (player.isAdmin && this.players.length) {
+        this.players[0].isAdmin = true;
+      }
     }
   }
 

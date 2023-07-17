@@ -119,7 +119,6 @@ io.on('connection', (socket: Socket<
     const game = rooms[roomName];
     if (game) {
       game.removePlayerBySocketId(socket.id);
-
       if (game.players.length === 0) {
         // clear room
         delete rooms[roomName];

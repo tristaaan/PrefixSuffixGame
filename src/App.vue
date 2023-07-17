@@ -84,7 +84,7 @@
       gameData.value = _gameData;
       if (kickedPlayer && kickedPlayer === playerName.value) {
         s.disconnect();
-        window.location.reload();
+        pageState.value = PageState.LOBBY;
       }
     });
   }
