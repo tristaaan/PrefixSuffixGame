@@ -5,6 +5,7 @@
 
   import { MIN_NAME_LENGTH, MAX_NAME_LENGTH } from '../shared/util';
   import { GameState } from '../shared/types';
+  import { showNotification } from './util/Notifications';
   import type {
     ServerToClientEvents,
     ClientToServerEvents,
@@ -80,6 +81,16 @@
     });
 
     s.on('updateGameData', (playerData: PlayerData[], _gameData:GameData, kickedPlayer?:string) => {
+      // show notification on round complete
+      if (_gameData.round !== gameData.value.round) {
+        const oldPlayerScore = roomPlayers.value.find((p) => p.name === playerName.value)?.score ?? 0;
+        const newPlayerScore = playerData.find((p) => p.name === playerName.value)?.score ?? 0;
+        if (oldPlayerScore !== newPlayerScore) {
+          showNotification('Wordfix', `You got ${newPlayerScore - oldPlayerScore} points for "${wordSubmission.value}"!`);
+        } else {
+          showNotification('Wordfix', `You got zero points for "${wordSubmission.value}" :(`);
+        }
+      }
       updatePlayerData(playerData);
       gameData.value = _gameData;
       if (kickedPlayer && kickedPlayer === playerName.value) {
