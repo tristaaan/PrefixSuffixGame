@@ -155,15 +155,22 @@
 </script>
 
 <template>
-  <main v-if="pageState == PageState.LOBBY">
+  <main class="lobby" v-if="pageState == PageState.LOBBY">
     <h2>Join Game</h2>
     <label>
       Room ID
-      <input type="text" v-model.trim="joinRoomName">
+      <input type="text"
+        v-model.trim="joinRoomName"
+        :maxlength="Game.ROOM_NAME_LENGTH"
+        placeholder="four character code"
+      >
     </label>
     <label>
       Player Name
-      <input type="text" v-model.trim="joinPlayerName">
+      <input type="text"
+        v-model.trim="joinPlayerName"
+        placeholder="what people call you"
+      >
     </label>
     <button
       @click="joinGame"
@@ -293,4 +300,10 @@
   button:disabled {
     cursor:not-allowed;
   }
+
+  .lobby label, .lobby button {
+    margin-top: 6px;
+    display: block;
+  }
+
 </style>

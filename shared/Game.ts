@@ -65,8 +65,10 @@ export class Game {
   prefixes :string[] = [];
   suffixes :string[] = [];
 
+  static ROOM_NAME_LENGTH = 4;
+
   constructor(prefixes: string[], suffixes: string[]) {
-    this.roomName = randomString(6);
+    this.roomName = randomString(Game.ROOM_NAME_LENGTH);
     this.prefixes = prefixes;
     this.suffixes = suffixes;
   }

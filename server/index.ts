@@ -32,6 +32,7 @@ io.on('connection', (socket: Socket<
   ServerToClientEvents
 >) => {
   socket.on('tryJoinGame', (roomName, playerName) => {
+    roomName = roomName.toUpperCase();
     if (rooms[roomName] === undefined) {
       socket.emit('roomDoesNotExist');
     } else if (rooms[roomName].playerExists(playerName)) {

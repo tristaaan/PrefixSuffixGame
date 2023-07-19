@@ -4,6 +4,10 @@ function triggerNotification(title:string, body:string) {
 }
 
 export const showNotification = (title:string, body:string) => {
+  if (!window.Notification) {
+    // prevent crash on ios
+    return;
+  }
   if (Notification.permission === "granted") {
     triggerNotification (title, body);
   } else if (Notification.permission !== "denied"){
