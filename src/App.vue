@@ -20,13 +20,17 @@
     GAME = "game"
   };
 
+  const props = defineProps<{
+    initialRoomName: string
+  }>()
+
   let pageState = ref(PageState.LOBBY);
+  let currentRoomName:Ref<string> = ref(props.initialRoomName ?? "");
   let joinPlayerName = ref("");
-  let joinRoomName = ref("");
+  let joinRoomName = ref(currentRoomName);
   let newGamePlayerName = ref("");
 
   let playerName:Ref<string> = ref("");
-  let currentRoomName:Ref<string> = ref("");
   let roomPlayers: Ref<PlayerData[]> = ref([]);
   let wordSubmission: Ref<string> = ref("");
   let gameData: Ref<GameData> = ref(Game.initialGameData());
@@ -55,7 +59,7 @@
 
   function establishSocket(s:Socket<ServerToClientEvents, ClientToServerEvents>) {
     s.on("roomDoesNotExist", () => {
-      alert(`The room '${joinRoomName.value}' does not exists`);
+      alert(`The room '${joinRoomName.value}' does not exist, this link may be expired`);
     });
 
     s.on("playerAlreadyExists", () => {
@@ -179,18 +183,19 @@
       Join
     </button>
     <br>
-
-    <h2>Start New Game</h2>
-    <label>
-      Player Name
-      <input type="text" v-model.trim="newGamePlayerName">
-    </label>
-    <button
-      @click="startNewGame"
-      :disabled="newGamePlayerName.length === 0"
-    >
-      Start New Game
-    </button>
+    <div v-if="currentRoomName.length == 0">
+      <h2>Start New Game</h2>
+      <label>
+        Player Name
+        <input type="text" v-model.trim="newGamePlayerName">
+      </label>
+      <button
+        @click="startNewGame"
+        :disabled="newGamePlayerName.length === 0"
+      >
+        Start New Game
+      </button>
+    </div>
   </main>
 
   <main v-if="pageState == PageState.GAME">

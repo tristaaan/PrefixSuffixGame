@@ -13,11 +13,12 @@ import type { ServerToClientEvents, ClientToServerEvents } from '../shared/types
 
 
 // Serve static files from the "public" directory
-app.use('/', express.static(path.resolve(path.join(__dirname, '/../../dist/'))));
+const rootpath = path.join('./dist');
+app.use('/', express.static(rootpath));
 
 // Route for the homepage
-app.get('/', (req:Request, res:Response) => {
-  res.sendFile('index.html');
+app.get('/*', (req:Request, res:Response) => {
+  res.sendFile('index.html', { root : rootpath});
 });
 
 const rooms: Record<string, Game> = {};
