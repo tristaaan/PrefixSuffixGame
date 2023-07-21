@@ -49,7 +49,7 @@
     if (newVal) {
       const code = `${location.origin}/${currentRoomName.value}`;
       console.log(code);
-      QRCode.toDataURL(code, { margin: 1 }, (err:Error, url:string) => {
+      QRCode.toDataURL(code, { margin: 1 }, (err: Error|null|undefined, url) => {
         if (err) {
           console.error(err);
         } else {
@@ -112,6 +112,7 @@
         } else {
           showNotification('Wordfix', `You got zero points for "${wordSubmission.value}" :(`);
         }
+        wordSubmission.value = "";
       }
       updatePlayerData(playerData);
       gameData.value = _gameData;
@@ -262,7 +263,7 @@
       </tbody>
     </table>
     <div v-if="gameData.gameState === GameState.IDLE">
-      <button @click="toggleReady">Ready</button>
+      <button class="ready" @click="toggleReady">Ready</button>
     </div>
     <div v-if="gameData.gameState === GameState.WRITING">
       <h1>{{ gameData.currentWord }}</h1>
@@ -318,6 +319,7 @@
 
   table {
     border-collapse: collapse;
+    margin-bottom: 1rem;
   }
 
   button {
@@ -326,6 +328,11 @@
 
   button:disabled {
     cursor:not-allowed;
+  }
+
+  button.ready {
+    width: 80px;
+    height: 36px;
   }
 
   .lobby label, .lobby button {
@@ -337,4 +344,14 @@
     margin-bottom: 0;
   }
 
+
+  @media screen and (max-width: 400px) {
+    table {
+      width: 100%;
+    }
+
+    tr td, tr th {
+      padding: 0;
+    }
+  }
 </style>
