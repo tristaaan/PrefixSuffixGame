@@ -1,7 +1,8 @@
 <script setup lang="ts">
-  import { ref, computed } from 'vue';
+  import { ref, computed, watch } from 'vue';
   import type { Ref, ComputedRef } from 'vue';
   import { io, Socket } from 'socket.io-client';
+  import QRCode from 'qrcode';
 
   import { MIN_NAME_LENGTH, MAX_NAME_LENGTH } from '../shared/util';
   import { GameState } from '../shared/types';
@@ -24,23 +25,40 @@
     initialRoomName: string
   }>()
 
-  let pageState = ref(PageState.LOBBY);
-  let currentRoomName:Ref<string> = ref(props.initialRoomName ?? "");
-  let joinPlayerName = ref("");
-  let joinRoomName = ref(currentRoomName);
-  let newGamePlayerName = ref("");
+  const pageState = ref(PageState.LOBBY);
+  const currentRoomName:Ref<string> = ref(props.initialRoomName ?? "");
+  const joinPlayerName = ref("");
+  const joinRoomName = ref(currentRoomName);
+  const newGamePlayerName = ref("");
 
-  let playerName:Ref<string> = ref("");
-  let roomPlayers: Ref<PlayerData[]> = ref([]);
-  let wordSubmission: Ref<string> = ref("");
-  let gameData: Ref<GameData> = ref(Game.initialGameData());
-  let copyStatus:Ref<string> = ref('');
-  let currentPlayerIsAdmin: ComputedRef<boolean> = computed(() => {
+  const playerName:Ref<string> = ref("");
+  const roomPlayers: Ref<PlayerData[]> = ref([]);
+  const wordSubmission: Ref<string> = ref("");
+  const gameData: Ref<GameData> = ref(Game.initialGameData());
+  const copyStatus:Ref<string> = ref('');
+  const src = ref("");
+  const currentPlayerIsAdmin: ComputedRef<boolean> = computed(() => {
     const player = roomPlayers.value.find((p) => p.name === playerName.value);
     if (player) {
       return player.isAdmin;
     }
     return false
+  });
+  let isInGame: ComputedRef<boolean> = computed(() => pageState.value === PageState.GAME);
+  watch(isInGame, (newVal, _oldVal) => {
+    if (newVal) {
+      const code = `${location.origin}/${currentRoomName.value}`;
+      console.log(code);
+      QRCode.toDataURL(code, { margin: 1 }, (err:Error, url:string) => {
+        if (err) {
+          console.error(err);
+        } else {
+          src.value = url;
+        }
+      })
+    } else {
+      console.log('not new val?');
+    }
   });
 
   let socket: Socket<ServerToClientEvents, ClientToServerEvents>;
@@ -159,7 +177,7 @@
 </script>
 
 <template>
-  <main class="lobby" v-if="pageState == PageState.LOBBY">
+  <main class="lobby" v-if="!isInGame">
     <h2>Join Game</h2>
     <label>
       Room ID
@@ -198,7 +216,7 @@
     </div>
   </main>
 
-  <main v-if="pageState == PageState.GAME">
+  <main v-else>
     <h1>
       Room Name: {{ currentRoomName }}
     </h1>
@@ -271,6 +289,10 @@
         Repeat for as long as you want.
       </li>
     </ol>
+    <div class="qr-code" v-show="isInGame">
+      <h3>Invite others!</h3>
+      <img :src="src" />
+    </div>
   </footer>
 </template>
 
@@ -309,6 +331,10 @@
   .lobby label, .lobby button {
     margin-top: 6px;
     display: block;
+  }
+
+  .qr-code h3 {
+    margin-bottom: 0;
   }
 
 </style>
