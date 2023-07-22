@@ -26,11 +26,11 @@ export type GameData = {
 export interface ServerToClientEvents {
   connect: (roomToJoin:string) => void;
   disconnect: () => void;
-  roomDoesNotExist: () => void;
-  playerAlreadyExists: () => void;
+  roomDoesNotExist: (roomName:string) => void;
+  playerAlreadyExists: (playerName:string,) => void;
   invalidPlayerName: () => void;
-  joinGame: (roomName:string, playerData: PlayerData[]) => void;
-  gameCreated: (roomName: string, playerData: PlayerData[]) => void;
+  joinGame: (roomName:string, playerName:string, playerData: PlayerData[]) => void;
+  gameCreated: (roomName: string, playerName:string, playerData: PlayerData[]) => void;
   updateGameData: (playerData:PlayerData[], gameData:GameData, kickedPlayer?: string) => void;
 }
 

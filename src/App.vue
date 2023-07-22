@@ -15,6 +15,7 @@
   } from '../shared/types';
   import { Game } from '../shared/Game';
   import ScoreCard from './components/ScoreCard.vue';
+  import LobbyView from './components/LobbyView.vue';
 
   enum PageState {
     LOBBY = "lobby",
@@ -23,14 +24,11 @@
 
   const props = defineProps<{
     initialRoomName: string
-  }>()
+  }>();
 
   const pageState = ref(PageState.LOBBY);
-  const currentRoomName:Ref<string> = ref(props.initialRoomName ?? "");
-  const joinPlayerName = ref("");
-  const joinRoomName = ref(currentRoomName);
-  const newGamePlayerName = ref("");
 
+  const currentRoomName: Ref<string> = ref("");
   const playerName:Ref<string> = ref("");
   const roomPlayers: Ref<PlayerData[]> = ref([]);
   const wordSubmission: Ref<string> = ref("");
@@ -63,59 +61,61 @@
 
   let socket: Socket<ServerToClientEvents, ClientToServerEvents>;
 
-  function joinGame() {
+  function joinGame(roomName:string, playerName:string) {
     socket = io();
     establishSocket(socket);
-    socket.emit('tryJoinGame', joinRoomName.value, joinPlayerName.value);
+    socket.emit('tryJoinGame', roomName, playerName);
   }
 
-  function startNewGame() {
+  function startNewGame(playerName:string) {
     socket = io();
     establishSocket(socket);
-    socket.emit('createGame', newGamePlayerName.value);
+    socket.emit('createGame', playerName);
   }
 
   function establishSocket(s:Socket<ServerToClientEvents, ClientToServerEvents>) {
-    s.on("roomDoesNotExist", () => {
-      alert(`The room '${joinRoomName.value}' does not exist, this link may be expired`);
+    s.on("roomDoesNotExist", (roomName:string) => {
+      alert(`The room '${roomName}' does not exist, this link may be expired`);
     });
 
-    s.on("playerAlreadyExists", () => {
-      alert(`A player in that room already has the username ${joinPlayerName.value}`);
+    s.on("playerAlreadyExists", (playerName: string) => {
+      alert(`A player in that room already has the username ${playerName}`);
     });
 
     s.on('invalidPlayerName', () => {
       alert(`Player name must be between ${MIN_NAME_LENGTH} to ${MAX_NAME_LENGTH} characters in length`)
     });
 
-    s.on("gameCreated", (roomName:string, playerData: PlayerData[]) => {
+    s.on("gameCreated", (roomName:string, _playerName: string, playerData: PlayerData[]) => {
       currentRoomName.value = roomName;
       updatePlayerData(playerData);
-      playerName.value = newGamePlayerName.value.toLocaleLowerCase();
+      playerName.value = _playerName;
       pageState.value = PageState.GAME;
     });
 
-    s.on("joinGame", (roomName:string, playerData: PlayerData[]) => {
+    s.on("joinGame", (roomName:string, _playerName: string, playerData: PlayerData[]) => {
       currentRoomName.value = roomName;
       updatePlayerData(playerData);
-      playerName.value = joinPlayerName.value.toLocaleLowerCase();
+      playerName.value = _playerName;
       pageState.value = PageState.GAME;
     });
 
-    s.on('updateGameData', (playerData: PlayerData[], _gameData:GameData, kickedPlayer?:string) => {
+    s.on('updateGameData', (newPlayerData: PlayerData[], newGameData:GameData, kickedPlayer?:string) => {
       // show notification on round complete
-      if (_gameData.round !== gameData.value.round) {
-        const oldPlayerScore = roomPlayers.value.find((p) => p.name === playerName.value)?.score ?? 0;
-        const newPlayerScore = playerData.find((p) => p.name === playerName.value)?.score ?? 0;
-        if (oldPlayerScore !== newPlayerScore) {
-          showNotification('Wordfix', `You got ${newPlayerScore - oldPlayerScore} points for "${wordSubmission.value}"!`);
-        } else {
-          showNotification('Wordfix', `You got zero points for "${wordSubmission.value}" :(`);
+      if (newGameData.round !== gameData.value.round) {
+        const currentPlayerData = roomPlayers.value.find((p) => p.name === playerName.value);
+        if (currentPlayerData?.lastSubmission) {
+          const newPlayerScore = newPlayerData.find((p) => p.name === playerName.value)?.score ?? 0;
+          if (currentPlayerData.score !== newPlayerScore) {
+            showNotification('Wordfix', `You got ${newPlayerScore - currentPlayerData.score} points for "${wordSubmission.value}"!`);
+          } else {
+            showNotification('Wordfix', `You got zero points for "${wordSubmission.value}" :(`);
+          }
+          wordSubmission.value = "";
         }
-        wordSubmission.value = "";
       }
-      updatePlayerData(playerData);
-      gameData.value = _gameData;
+      updatePlayerData(newPlayerData);
+      gameData.value = newGameData;
       if (kickedPlayer && kickedPlayer === playerName.value) {
         s.disconnect();
         pageState.value = PageState.LOBBY;
@@ -178,44 +178,11 @@
 </script>
 
 <template>
-  <main class="lobby" v-if="!isInGame">
-    <h2>Join Game</h2>
-    <label>
-      Room ID
-      <input type="text"
-        v-model.trim="joinRoomName"
-        :maxlength="Game.ROOM_NAME_LENGTH"
-        placeholder="four character code"
-      >
-    </label>
-    <label>
-      Player Name
-      <input type="text"
-        v-model.trim="joinPlayerName"
-        placeholder="what people call you"
-      >
-    </label>
-    <button
-      @click="joinGame"
-      :disabled="joinRoomName.length === 0 || joinPlayerName.length === 0"
-    >
-      Join
-    </button>
-    <br>
-    <div v-if="currentRoomName.length == 0">
-      <h2>Start New Game</h2>
-      <label>
-        Player Name
-        <input type="text" v-model.trim="newGamePlayerName">
-      </label>
-      <button
-        @click="startNewGame"
-        :disabled="newGamePlayerName.length === 0"
-      >
-        Start New Game
-      </button>
-    </div>
-  </main>
+  <LobbyView v-if="!isInGame"
+    :initial-room-name="props.initialRoomName"
+    @on-join-game="joinGame"
+    @on-start-game="startNewGame"
+  />
 
   <main v-else>
     <h1>

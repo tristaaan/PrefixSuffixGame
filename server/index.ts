@@ -35,16 +35,16 @@ io.on('connection', (socket: Socket<
   socket.on('tryJoinGame', (roomName, playerName) => {
     roomName = roomName.toUpperCase();
     if (rooms[roomName] === undefined) {
-      socket.emit('roomDoesNotExist');
+      socket.emit('roomDoesNotExist', roomName);
     } else if (rooms[roomName].playerExists(playerName)) {
-      socket.emit('playerAlreadyExists');
+      socket.emit('playerAlreadyExists', playerName);
     } else if (!validPlayerName(playerName)) {
       socket.emit('invalidPlayerName');
     } else {
       const game = rooms[roomName];
       const newPlayer = new Player(playerName, socket.id);
       game.addPlayer(newPlayer);
-      socket.emit('joinGame', roomName, game.getPlayerData())
+      socket.emit('joinGame', roomName, newPlayer.name, game.getPlayerData())
       socket.join(roomName);
       io.to(roomName)
         .emit('updateGameData',
@@ -63,7 +63,7 @@ io.on('connection', (socket: Socket<
     rooms[roomName] = game;
     socket.join(roomName);
     io.to(roomName)
-      .emit('gameCreated', roomName, rooms[roomName].getPlayerData());
+      .emit('gameCreated', roomName, firstPlayer.name, rooms[roomName].getPlayerData());
     socketIdByRoom[socket.id] = roomName;
   });
 
