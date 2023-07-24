@@ -317,8 +317,12 @@
       width: 100%;
     }
 
-    tr td, tr th {
+    tr th {
       padding: 0;
+    }
+
+    tr td {
+      padding: 0 4px;
     }
   }
 </style>
