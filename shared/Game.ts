@@ -23,6 +23,10 @@ export class Player {
   }
 
   changeSubmission(newVal:string) {
+    if (newVal === Game.SKIP_WORD && this.submission !== Game.SKIP_WORD) {
+      // a player with a submission cannot be skipped
+      return;
+    }
     this.submission = newVal;
     this.ready = true;
   }
@@ -50,8 +54,13 @@ export class Player {
     };
   }
 
-  toggleReady() {
-    this.ready = !this.ready;
+  toggleReady(forceTrue:boolean) {
+    if (forceTrue) {
+      // in the case of skipping players, they can still unready
+      this.ready = true;
+    } else {
+      this.ready = !this.ready;
+    }
   }
 }
 
@@ -66,6 +75,7 @@ export class Game {
   suffixes :string[] = [];
 
   static ROOM_NAME_LENGTH = 4;
+  static SKIP_WORD = '_';
 
   constructor(prefixes: string[], suffixes: string[]) {
     this.roomName = randomString(Game.ROOM_NAME_LENGTH);
@@ -169,11 +179,11 @@ export class Game {
     return this.players.every((p) => p.submission.length > 0);
   }
 
-  readyPlayerToggle(playerName:string) {
+  readyPlayerToggle(playerName:string, forceReady:boolean = false) {
     const lowerName = playerName.toLocaleLowerCase();
     const player = this.getPlayer(lowerName);
     if (player) {
-      player.toggleReady();
+      player.toggleReady(forceReady);
     } else {
       console.warn(`no player found with name '${lowerName}'`);
     }
@@ -198,7 +208,9 @@ export class Game {
     // enumerate word counts
     for (const [i, p] of this.players.entries()) {
       const word = p.submission;
-      if (wordCount[word]) {
+      if (word === Game.SKIP_WORD) {
+        continue;
+      } else if (wordCount[word]) {
         wordCount[word].push(i);
       } else {
         wordCount[word] = [i];

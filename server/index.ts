@@ -9,7 +9,7 @@ import {Game, Player} from '../shared/Game';
 import { validPlayerName } from '../shared/util';
 import readWords from './readWords';
 import type { Socket } from 'socket.io';
-import type { ServerToClientEvents, ClientToServerEvents } from '../shared/types';
+import { type ServerToClientEvents, type ClientToServerEvents, GameState } from '../shared/types';
 
 
 // Serve static files from the "public" directory
@@ -26,6 +26,10 @@ const socketIdByRoom: Record<string, string> = {};
 
 const suffixes = readWords('suffixes.txt');
 const prefixes = readWords('prefixes.txt');
+
+function playerIsAdmin(socketId: string, game:Game):boolean {
+  return game.getGameAdmin()?.socketId === socketId;
+}
 
 // Socket.IO connections
 io.on('connection', (socket: Socket<
@@ -100,8 +104,7 @@ io.on('connection', (socket: Socket<
   socket.on('kickPlayer', (roomName, playerName) => {
     // assert admin
     const game = rooms[roomName];
-    const adminPlayer = rooms[roomName].getGameAdmin();
-    if (adminPlayer?.socketId === socket.id) {
+    if (playerIsAdmin(socket.id, game)) {
       game.removePlayer(playerName);
       io.to(roomName)
         .emit('updateGameData',
@@ -112,8 +115,30 @@ io.on('connection', (socket: Socket<
     }
   })
 
-  socket.on('skipPlayer', (roomName, playerName) => {
-
+  socket.on('skipPlayer', (roomName, skippedPlayer) => {
+    const game = rooms[roomName];
+    if (playerIsAdmin(socket.id, game)) {
+      if (game.gameState === GameState.IDLE) {
+        // ready up a player, they can unready if necessary
+        game.readyPlayerToggle(skippedPlayer, true);
+        if (game.allPlayersReady()) {
+          game.startWritingPhase();
+        }
+      } else if (game.gameState === GameState.WRITING) {
+        // change skipped player submission to skipped word
+        const player = game.getPlayer(skippedPlayer);
+        player?.changeSubmission(Game.SKIP_WORD);
+        if (game.allWordsSubmitted()) {
+          game.scoreRound();
+          game.startIdlePhase();
+        }
+      }
+      io.to(roomName)
+        .emit('updateGameData',
+          game.getPlayerData(),
+          game.getGameData()
+        );
+    }
   });
 
   socket.on('disconnect', () => {
