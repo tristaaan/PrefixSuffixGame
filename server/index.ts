@@ -141,7 +141,8 @@ io.on('connection', (socket: Socket<
     }
   });
 
-  socket.on('disconnect', () => {
+  socket.on('disconnect', (reason) => {
+    console.log(`player dc: '${reason}'`);
     const roomName = socketIdByRoom[socket.id];
     const game = rooms[roomName];
     if (game) {
@@ -149,6 +150,7 @@ io.on('connection', (socket: Socket<
       if (game.players.length === 0) {
         // clear room
         delete rooms[roomName];
+        console.log(`game finished: ${game.roomName}`);
       } else {
         // otherwise send update to the room with new player data
         io.to(roomName)
