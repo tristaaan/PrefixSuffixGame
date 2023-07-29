@@ -4,7 +4,7 @@
   import { io, Socket } from 'socket.io-client';
   import QRCode from 'qrcode';
 
-  import { MIN_NAME_LENGTH, MAX_NAME_LENGTH } from '../shared/util';
+  import { findPlayerByName, MIN_NAME_LENGTH, MAX_NAME_LENGTH } from '../shared/util';
   import { GameState } from '../shared/types';
   import { showNotification } from './util/Notifications';
   import type {
@@ -36,7 +36,7 @@
   const copyStatus:Ref<string> = ref('');
   const src = ref("");
   const currentPlayerIsAdmin: ComputedRef<boolean> = computed(() => {
-    const player = roomPlayers.value.find((p) => p.name === playerName.value);
+    const player = findPlayerByName(roomPlayers.value, playerName.value);
     if (player) {
       return player.isAdmin;
     }
@@ -46,7 +46,6 @@
   watch(isInGame, (newVal, _oldVal) => {
     if (newVal) {
       const code = `${location.origin}/${currentRoomName.value}`;
-      console.log(code);
       QRCode.toDataURL(code, { margin: 1 }, (err: Error|null|undefined, url) => {
         if (err) {
           console.error(err);
@@ -54,8 +53,6 @@
           src.value = url;
         }
       })
-    } else {
-      console.log('not new val?');
     }
   });
 
@@ -101,13 +98,14 @@
     });
 
     s.on('updateGameData', (newPlayerData: PlayerData[], newGameData:GameData, kickedPlayer?:string) => {
-      // show notification on round complete
       if (newGameData.round !== gameData.value.round) {
-        const currentPlayerData = roomPlayers.value.find((p) => p.name === playerName.value);
-        if (currentPlayerData?.lastSubmission) {
-          const newPlayerScore = newPlayerData.find((p) => p.name === playerName.value)?.score ?? 0;
-          if (currentPlayerData.score !== newPlayerScore) {
-            showNotification('Wordfix', `You got ${newPlayerScore - currentPlayerData.score} points for "${wordSubmission.value}"!`);
+        const oldPlayerData = findPlayerByName(roomPlayers.value, playerName.value);
+        const updatedPlayerData = findPlayerByName(newPlayerData, playerName.value);
+        // show notification on round complete
+        if (oldPlayerData && updatedPlayerData?.lastSubmission) {
+          const newPlayerScore = updatedPlayerData.score;
+          if (oldPlayerData.score !== newPlayerScore) {
+            showNotification('Wordfix', `You got ${newPlayerScore - oldPlayerData.score} points for "${wordSubmission.value}"!`);
           } else {
             showNotification('Wordfix', `You got zero points for "${wordSubmission.value}" :(`);
           }
@@ -144,7 +142,7 @@
   }
 
   function copyRoomName() {
-    navigator.clipboard.writeText(currentRoomName.value)
+    navigator.clipboard.writeText(`${location.origin}/${currentRoomName.value}`)
       .then(() => {
         copyStatus.value = "✅";
         setTimeout(() => {
@@ -234,7 +232,10 @@
     </div>
     <div v-if="gameData.gameState === GameState.WRITING">
       <h1>{{ gameData.currentWord }}</h1>
-      <input type="text" v-model.trim="wordSubmission">
+      <input type="text"
+        @keyup.enter="submitWord"
+        v-model.trim="wordSubmission"
+      >
       <button
         @click="submitWord"
         :disabled="wordSubmission.length === 0">Submit</button>

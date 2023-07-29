@@ -1,3 +1,5 @@
+import type { PlayerData } from "./types";
+
 export const randomString = (size:number): string => {
   if (size === 0) {
     throw new Error('Zero-length randomString is useless.');
@@ -20,4 +22,8 @@ export const MAX_NAME_LENGTH = 18 as const;
 
 export const validPlayerName = (name:string) => {
   return name.length >= MIN_NAME_LENGTH && name.length <= MAX_NAME_LENGTH;
+}
+
+export const findPlayerByName = (arr: PlayerData[], playerName:string) => {
+  return arr.find((p) => p.name === playerName)
 }
