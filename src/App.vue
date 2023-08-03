@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { ref, computed, watch } from 'vue';
+  import { ref, computed, watch, nextTick } from 'vue';
   import type { Ref, ComputedRef } from 'vue';
   import { io, Socket } from 'socket.io-client';
   import QRCode from 'qrcode';
@@ -31,6 +31,7 @@
   const currentRoomName: Ref<string> = ref("");
   const playerName:Ref<string> = ref("");
   const roomPlayers: Ref<PlayerData[]> = ref([]);
+  const wordSubmissionField = ref<HTMLDivElement>();
   const wordSubmission: Ref<string> = ref("");
   const gameData: Ref<GameData> = ref(Game.initialGameData());
   const copyStatus:Ref<string> = ref('');
@@ -114,6 +115,13 @@
       }
       updatePlayerData(newPlayerData);
       gameData.value = newGameData;
+      if (newGameData.gameState === GameState.WRITING) {
+        nextTick(() => {
+          if (wordSubmissionField.value) {
+            wordSubmissionField.value.focus();
+          }
+        });
+      }
       if (kickedPlayer && kickedPlayer === playerName.value) {
         s.disconnect();
         pageState.value = PageState.LOBBY;
@@ -176,96 +184,111 @@
 </script>
 
 <template>
-  <LobbyView v-if="!isInGame"
-    :initial-room-name="props.initialRoomName"
-    @on-join-game="joinGame"
-    @on-start-game="startNewGame"
-  />
-
-  <main v-else>
-    <h1>
-      Room Name: {{ currentRoomName }}
-    </h1>
-    <button @click="copyRoomName">Copy Room Name {{ copyStatus }}</button>
-    <h2>Round: {{ gameData.round }}</h2>
-    <h2>Players</h2>
-    <table>
-      <thead>
-        <tr>
-          <th v-if="currentPlayerIsAdmin">Admin</th>
-          <th>Ready</th>
-          <th>Name</th>
-          <th>Score</th>
-          <th v-if="(gameData.round ?? 0) > 1">Last word</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="p in roomPlayers" :key="p.name" >
-          <td v-if="currentPlayerIsAdmin">
-            <span v-if="p.isAdmin">➡️</span>
-            <span v-else>
-              <button @click="adminSkip" :data-player-name="p.name">skip</button>
-              <button @click="adminKick" :data-player-name="p.name">kick</button>
-            </span>
-          </td>
-          <td>{{ p.ready ? '✅' : '_' }}</td>
-          <td>{{ p.name }}</td>
-          <td>
-            <ScoreCard :score="p.score"/>
-          </td>
-          <td v-if="gameData.round > 1 && p.lastSubmission">
-            <span v-if="p.lastSubmission.isSubmissionPrefix">
-              <span class="last-submission">{{ p.lastSubmission.submission }}</span>
-              <span>{{ p.lastSubmission.stem }}</span>
-            </span>
-            <span v-else>
-              <span>{{ p.lastSubmission.stem }}</span>
-              <span class="last-submission">{{ p.lastSubmission.submission }}</span>
-            </span>
-          </td>
-          <td v-if="gameData.round > 1 && !p.lastSubmission"/>
-        </tr>
-      </tbody>
-    </table>
-    <div v-if="gameData.gameState === GameState.IDLE">
-      <button class="ready" @click="toggleReady">Ready</button>
-    </div>
-    <div v-if="gameData.gameState === GameState.WRITING">
-      <h1>{{ gameData.currentWord }}</h1>
-      <input type="text"
-        @keyup.enter="submitWord"
-        v-model.trim="wordSubmission"
-      >
-      <button
-        @click="submitWord"
-        :disabled="wordSubmission.length === 0">Submit</button>
-    </div>
-  </main>
-  <footer>
-    <h2>Rules:</h2>
-    <ol>
-      <li>A word is shown to players with a blank space either before or after. (e.g., <em>___ball</em> or <em>up___</em>)</li>
-      <li>Players submit a word or fragment that fits in that space. (e.g., <em>foot</em> for <em>___ball</em>  or <em>draft</em> for <em>up___</em>)</li>
-      <li>
-        Once all players have made submissions players are assigned points based on the following:
-        <ul>
-          <li>If a pair of players have the same word they both get 3 points.</li>
-          <li>If more than two players have the same word everyone gets 1 point.</li>
-          <li>If no words match no players get any points.</li>
-        </ul>
-      </li>
-      <li>
-        Repeat for as long as you want.
-      </li>
-    </ol>
-    <div class="qr-code" v-show="isInGame">
-      <h3>Invite others!</h3>
-      <img :src="src" />
-    </div>
-  </footer>
+  <div class="banner">
+    <strong>WordFix</strong>
+  </div>
+  <div class="content">
+    <LobbyView v-if="!isInGame"
+      :initial-room-name="props.initialRoomName"
+      @on-join-game="joinGame"
+      @on-start-game="startNewGame"
+    />
+    <main v-else>
+      <h1>
+        Room Name: {{ currentRoomName }}
+      </h1>
+      <button @click="copyRoomName">Copy Room Name {{ copyStatus }}</button>
+      <h2>Round: {{ gameData.round }}</h2>
+      <h2>Players</h2>
+      <table>
+        <thead>
+          <tr>
+            <th v-if="currentPlayerIsAdmin">Admin</th>
+            <th>Ready</th>
+            <th>Name</th>
+            <th>Score</th>
+            <th v-if="(gameData.round ?? 0) > 1">Last word</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="p in roomPlayers" :key="p.name" >
+            <td v-if="currentPlayerIsAdmin">
+              <span v-if="p.isAdmin">➡️</span>
+              <span v-else>
+                <button @click="adminSkip" :data-player-name="p.name">skip</button>
+                <button @click="adminKick" :data-player-name="p.name">kick</button>
+              </span>
+            </td>
+            <td>{{ p.ready ? '✅' : '_' }}</td>
+            <td>{{ p.name }}</td>
+            <td>
+              <ScoreCard :score="p.score"/>
+            </td>
+            <td v-if="gameData.round > 1 && p.lastSubmission">
+              <span v-if="p.lastSubmission.isSubmissionPrefix">
+                <span class="last-submission">{{ p.lastSubmission.submission }}</span>
+                <span>{{ p.lastSubmission.stem }}</span>
+              </span>
+              <span v-else>
+                <span>{{ p.lastSubmission.stem }}</span>
+                <span class="last-submission">{{ p.lastSubmission.submission }}</span>
+              </span>
+            </td>
+            <td v-if="gameData.round > 1 && !p.lastSubmission"/>
+          </tr>
+        </tbody>
+      </table>
+      <div v-if="gameData.gameState === GameState.IDLE">
+        <button class="ready" @click="toggleReady">Ready</button>
+      </div>
+      <div v-if="gameData.gameState === GameState.WRITING">
+        <h1>{{ gameData.currentWord }}</h1>
+        <input type="text"
+          ref="wordSubmissionField"
+          @keyup.enter="wordSubmission ? submitWord() : null"
+          v-model.trim="wordSubmission"
+          autocomplete="off"
+          enterkeyhint="send"
+        >
+        <button
+          @click="submitWord"
+          :disabled="wordSubmission.length === 0">Submit</button>
+      </div>
+    </main>
+    <footer>
+      <h2>Rules:</h2>
+      <ol>
+        <li>A word is shown to players with a blank space either before or after. (e.g., <em>___ball</em> or <em>up___</em>)</li>
+        <li>Players submit a word or fragment that fits in that space. (e.g., <em>foot</em> for <em>___ball</em>  or <em>draft</em> for <em>up___</em>)</li>
+        <li>
+          Once all players have made submissions players are assigned points based on the following:
+          <ul>
+            <li>If a pair of players have the same word they both get 3 points.</li>
+            <li>If more than two players have the same word everyone gets 1 point.</li>
+            <li>If no words match no players get any points.</li>
+          </ul>
+        </li>
+        <li>
+          Repeat for as long as you want.
+        </li>
+      </ol>
+      <div class="qr-code" v-show="isInGame">
+        <h3>Invite others!</h3>
+        <img :src="src" />
+      </div>
+    </footer>
+  </div>
 </template>
 
 <style scoped>
+  .banner {
+    width: 100%;
+    background-color: rgb(171, 217, 255);
+    padding: 0.25em;
+  }
+  .content {
+    padding: 0.5em;
+  }
   .last-submission{
     text-decoration: underline;
   }
@@ -303,15 +326,13 @@
     height: 36px;
   }
 
-  .lobby label, .lobby button {
-    margin-top: 6px;
-    display: block;
-  }
-
   .qr-code h3 {
     margin-bottom: 0;
   }
 
+  input {
+    font-size: 1rem;
+  }
 
   @media screen and (max-width: 400px) {
     table {
